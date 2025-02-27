@@ -1,0 +1,15 @@
+# Modify the code if necessary
+# In dcase2024-task6-baseline/src/dcase24t6/pre_processes/cnext.py insert after line 39:
+torch.multiprocessing.set_start_method('spawn')
+
+# Create virtual environment for bert
+conda create -n env_dcase24_bert python=3.11
+
+# Downgrade pip
+python -m pip install --force-reinstall pip==24.0
+
+# Install requirements for bert virtual environment
+pip install -r requirements_bert.txt
+
+
+# Modified datamodules/hdf.py by commenting line 193 to skip training the tokenizer.
