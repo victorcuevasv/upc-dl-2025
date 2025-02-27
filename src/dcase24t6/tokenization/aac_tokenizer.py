@@ -17,6 +17,7 @@ from tokenizers.processors import PostProcessor
 from tokenizers.processors import Sequence as ProcessorSequence
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import Trainer, WordLevelTrainer
+from transformers import AutoModel, BertTokenizer
 
 
 class AACTokenizer:
@@ -25,11 +26,11 @@ class AACTokenizer:
 
     def __init__(
         self,
-        tokenizer: Tokenizer | None = None,
-        pad_token: str = "<pad>",
-        bos_token: str = "<bos>",
-        eos_token: str = "<eos>",
-        unk_token: str = "<unk>",
+        tokenizer: BertTokenizer | None = None,
+        pad_token: str = "[PAD]",
+        bos_token: str = "[CLS]",  # Added for this application
+        eos_token: str = "[SEP]",  # Added for this application
+        unk_token: str = "[UNK]",
         version: int | None = None,
     ) -> None:
         """Wrapper of tokenizers.Tokenizer for audio captioning.
@@ -43,12 +44,7 @@ class AACTokenizer:
             version: AACTokenizer version. Intended for future updates of this class.
         """
         if tokenizer is None:
-            tokenizer = self.__class__.default_tokenizer(
-                pad_token=pad_token,
-                bos_token=bos_token,
-                eos_token=eos_token,
-                unk_token=unk_token,
-            )
+            tokenizer = self.__class__.bert_tokenizer()
 
         if version is None:
             version = AACTokenizer.VERSION
@@ -86,6 +82,27 @@ class AACTokenizer:
         tokenizer.enable_padding(
             direction="right", pad_id=initial_vocab[pad_token], pad_token=pad_token
         )
+        return tokenizer
+
+    @classmethod
+    def bert_tokenizer(
+        cls,
+        pad_token: str = "[PAD]",
+        bos_token: str = "[CLS]",
+        eos_token: str = "[SEP]",
+        unk_token: str = "[UNK]",
+    ) -> BertTokenizer:
+        model_type = "bert-base-cased"
+        tokenizer = BertTokenizer.from_pretrained(model_type, use_fast=False)
+        model = AutoModel.from_pretrained(model_type)
+        # new tokens
+        new_tokens = [bos_token, eos_token]
+        # check if the tokens are already in the vocabulary
+        new_tokens = set(new_tokens) - set(tokenizer.vocab.keys())
+        # add the tokens to the tokenizer vocabulary
+        tokenizer.add_tokens(list(new_tokens))
+        # add new, random embeddings for the new tokens
+        model.resize_token_embeddings(len(tokenizer))
         return tokenizer
 
     @classmethod
@@ -180,10 +197,12 @@ class AACTokenizer:
         return self.token_to_id(self.unk_token)
 
     def token_to_id(self, token: str) -> int:
-        return self._tokenizer.token_to_id(token)
+        # return self._tokenizer.token_to_id(token)
+        return self._tokenizer._convert_token_to_id(token)
 
     def get_token_to_id(self, with_added_tokens: bool = True) -> dict[str, int]:
-        return self._tokenizer.get_vocab(with_added_tokens)
+        # return self._tokenizer.get_vocab(with_added_tokens)
+        return self._tokenizer.get_vocab()
 
     def get_id_to_token(self, with_added_tokens: bool = True) -> dict[int, str]:
         return {
@@ -200,11 +219,14 @@ class AACTokenizer:
         self.tokenizer.train_from_iterator(sequence, trainer=trainer)
 
     def encode(self, sequence: str, disable_unk_token: bool = False) -> Encoding:
+        """
         if disable_unk_token:
             self.tokenizer.model.unk_token = ""
         encoding = self.tokenizer.encode(sequence)
         if disable_unk_token:
             self.tokenizer.model.unk_token = self.unk_token
+        """
+        encoding = self.tokenizer.encode(sequence)
         return encoding
 
     def encode_batch(
@@ -214,7 +236,8 @@ class AACTokenizer:
     ) -> list[Encoding]:
         if disable_unk_token:
             self.tokenizer.model.unk_token = ""
-        encodings = self.tokenizer.encode_batch(sequence)
+        # encodings = self.tokenizer.encode_batch(sequence)
+        encodings = self.tokenizer.batch_encode_plus(sequence, padding=True)
         if disable_unk_token:
             self.tokenizer.model.unk_token = self.unk_token
         return encodings
@@ -239,7 +262,8 @@ class AACTokenizer:
     ) -> list[str]:
         if is_list_encoding(sequences):
             sequences = [element.ids for element in sequences]
-        decoded = self.tokenizer.decode_batch(
+        # decoded = self.tokenizer.decode_batch(sequences, skip_special_tokens=skip_special_tokens)
+        decoded = self.tokenizer.batch_decode(
             sequences, skip_special_tokens=skip_special_tokens
         )
         return decoded
@@ -248,7 +272,8 @@ class AACTokenizer:
         return self.tokenizer.get_vocab()
 
     def get_vocab_size(self) -> int:
-        return self.tokenizer.get_vocab_size()
+        # return self.tokenizer.get_vocab_size()
+        return self.tokenizer.vocab_size
 
     def to_str(self, pretty: bool = False) -> str:
         added_data = {
@@ -278,16 +303,20 @@ class AACTokenizer:
     def save(self, path: str | Path, pretty: bool = True) -> None:
         """Save tokenizer to JSON file."""
         path = Path(path).resolve()
-        content = self.to_str(pretty=pretty)
-        path.write_text(content)
+        # content = self.to_str(pretty=pretty)
+        # path.write_text(content)
+        self.tokenizer.save_pretrained(path)
 
     @classmethod
     def from_file(cls, path: str | Path) -> "AACTokenizer":
         """Load tokenizer from JSON file."""
         path = Path(path).resolve().expanduser()
+        """
         content = path.read_text()
         aac_tokenizer = cls.from_str(content)
         return aac_tokenizer
+        """
+        return BertTokenizer.from_pretrained(path)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(vocab={self.get_vocab_size()})"

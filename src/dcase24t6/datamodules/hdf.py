@@ -129,7 +129,8 @@ class HDFDatamodule(LightningDataModule):
         refs = item["captions"]
         ref = random.choice(refs)
         caption = self.tokenizer.encode(ref, disable_unk_token=True)
-        caption = torch.as_tensor(caption.ids)
+        # caption = torch.as_tensor(caption.ids)
+        caption = torch.as_tensor(caption)
 
         item["captions"] = caption
         item["references"] = ref
@@ -154,9 +155,9 @@ class HDFDatamodule(LightningDataModule):
     ) -> dict[str, Any]:
         if "captions" in item:
             refs = item.pop("captions")
-            captions = self.tokenizer.encode_batch(refs)
-            captions = torch.as_tensor([cap.ids for cap in captions])
-
+            captionsMap = self.tokenizer.encode_batch(refs)
+            captions = torch.as_tensor([cap for cap in captionsMap.input_ids])
+            # captions = torch.as_tensor([cap.ids for cap in captions])
             item["mult_captions"] = captions
             item["mult_references"] = refs
 
@@ -190,7 +191,7 @@ class HDFDatamodule(LightningDataModule):
 
         self.train_dataset = dataset
         self.train_collate_fn = train_collate_fn
-        self.tokenizer.train_from_iterator(flat_references)
+        # self.tokenizer.train_from_iterator(flat_references)
 
     def setup_val(self) -> None:
         datasets, collate_fn = self._common_setup(
