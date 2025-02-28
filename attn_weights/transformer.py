@@ -13,7 +13,9 @@ from .dropout import Dropout
 from .linear import Linear
 from .normalization import LayerNorm
 import wandb
+import numpy as np
 import pandas as pd
+import random
 
 __all__ = ['Transformer', 'TransformerEncoder', 'TransformerDecoder', 'TransformerEncoderLayer', 'TransformerDecoderLayer']
 
@@ -867,12 +869,22 @@ class TransformerDecoderLayer(Module):
                     x, memory, memory_mask, memory_key_padding_mask, memory_is_causal
                 )
             )
-            # Log attention weights (use a logging system of your choice)
-            # print(f"Attention Weights Shape: {attn_weights.shape}")  # Example: (batch, num_heads, tgt_len, src_len)
-            df = pd.DataFrame(attn_weights.numpy())
+            attn_weights = self.attn_weights  # Modificado: Retrieve the stored attention weights
+            x = self.norm3(x + self._ff_block(x))
+        # Log attention weights (use a logging system of your choice)
+        # print(f"Attention Weights Shape: {attn_weights.shape}")  # Example: (batch, num_heads, tgt_len, src_len)
+        if random.randrange(1000) == 5:
+            
+            # https://stackoverflow.com/questions/36235180/efficiently-creating-a-pandas-dataframe-from-a-numpy-3d-array
+            nparr = attn_weights.detach().cpu().numpy()
+            m,n,r = nparr.shape
+            out_arr = np.column_stack((np.repeat(np.arange(m),n),nparr.reshape(m*n,-1)))
+            df = pd.DataFrame(out_arr)
             tbl = wandb.Table(dataframe=df)
             wandb.log({"attn_weights_table":tbl})
-            x = self.norm3(x + self._ff_block(x))
+            
+            # wandb.log({"attn_weights":attn_weights.detach().cpu().tolist()})
+        
 
         return x
 
