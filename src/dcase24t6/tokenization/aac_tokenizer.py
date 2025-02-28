@@ -17,7 +17,7 @@ from tokenizers.processors import PostProcessor
 from tokenizers.processors import Sequence as ProcessorSequence
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import Trainer, WordLevelTrainer
-from transformers import AutoModel, BertTokenizer
+from transformers import AutoModel, AutoTokenizer, GPT2Tokenizer
 
 
 class AACTokenizer:
@@ -26,11 +26,11 @@ class AACTokenizer:
 
     def __init__(
         self,
-        tokenizer: BertTokenizer | None = None,
-        pad_token: str = "[PAD]",
-        bos_token: str = "[CLS]",  # Added for this application
-        eos_token: str = "[SEP]",  # Added for this application
-        unk_token: str = "[UNK]",
+        tokenizer: GPT2Tokenizer | None = None,
+        pad_token: str = "<|endoftext|>",
+        bos_token: str = "<|endoftext|>",  # Added for this application
+        eos_token: str = "<|endoftext|>",  # Added for this application
+        unk_token: str = "<|unk|>",
         version: int | None = None,
     ) -> None:
         """Wrapper of tokenizers.Tokenizer for audio captioning.
@@ -44,7 +44,7 @@ class AACTokenizer:
             version: AACTokenizer version. Intended for future updates of this class.
         """
         if tokenizer is None:
-            tokenizer = self.__class__.bert_tokenizer()
+            tokenizer = self.__class__.gpt2_tokenizer()
 
         if version is None:
             version = AACTokenizer.VERSION
@@ -85,22 +85,23 @@ class AACTokenizer:
         return tokenizer
 
     @classmethod
-    def bert_tokenizer(
+    def gpt2_tokenizer(
         cls,
-        pad_token: str = "[PAD]",
-        bos_token: str = "[CLS]",
-        eos_token: str = "[SEP]",
-        unk_token: str = "[UNK]",
-    ) -> BertTokenizer:
-        model_type = "bert-base-cased"
-        tokenizer = BertTokenizer.from_pretrained(model_type, use_fast=False)
+        pad_token: str = "<|endoftext|>",
+        bos_token: str = "<|endoftext|>",
+        eos_token: str = "<|endoftext|>",
+        unk_token: str = "<|unk|>",
+    ) -> GPT2Tokenizer:
+        model_type = "gpt2"
+        tokenizer = AutoTokenizer.from_pretrained(model_type, use_fast=False)
         model = AutoModel.from_pretrained(model_type)
-        # new tokens
-        new_tokens = [bos_token, eos_token]
-        # check if the tokens are already in the vocabulary
-        new_tokens = set(new_tokens) - set(tokenizer.vocab.keys())
-        # add the tokens to the tokenizer vocabulary
-        tokenizer.add_tokens(list(new_tokens))
+        # See https://discuss.huggingface.co/t/gpt2tokenizer-not-putting-bos-eos-token/27394/2
+        special_tokens_dict = {'eos_token': eos_token, 'bos_token': bos_token, 'pad_token': pad_token, 'unk_token': unk_token}
+        tokenizer.add_special_tokens(special_tokens_dict) # with this, you don't have to manually define the new tokens' ids
+        tokenizer.post_processor = TemplateProcessing(
+            single=tokenizer.bos_token + " $A " + tokenizer.eos_token,
+            special_tokens=[(tokenizer.eos_token, tokenizer.eos_token_id), (tokenizer.bos_token, tokenizer.bos_token_id)],
+        )
         # add new, random embeddings for the new tokens
         model.resize_token_embeddings(len(tokenizer))
         return tokenizer
@@ -316,7 +317,7 @@ class AACTokenizer:
         aac_tokenizer = cls.from_str(content)
         return aac_tokenizer
         """
-        return BertTokenizer.from_pretrained(path)
+        return GPT2Tokenizer.from_pretrained(path)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(vocab={self.get_vocab_size()})"
