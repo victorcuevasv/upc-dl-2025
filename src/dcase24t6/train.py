@@ -56,6 +56,8 @@ pylog = logging.getLogger(__name__)
 )
 def train(cfg: DictConfig) -> None | float:
     seed_everything(cfg.seed)
+    import wandb
+    wandb.init(project='audio-captioning')
 
     start_time = time.perf_counter()
     global_tracker: CustomEmissionTracker = instantiate(cfg.emission)
@@ -120,6 +122,8 @@ def train(cfg: DictConfig) -> None | float:
     pylog.info(
         f"Job results are saved in '{cfg.save_dir}'. (duration={pretty_total_duration})"
     )
+
+    wandb.finish()
 
 
 def get_callbacks(cfg: DictConfig) -> dict[str, Callback]:
