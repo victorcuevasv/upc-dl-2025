@@ -12,10 +12,11 @@ from ..init import xavier_uniform_
 from .dropout import Dropout
 from .linear import Linear
 from .normalization import LayerNorm
-import wandb
-import numpy as np
-import pandas as pd
+## import wandb
+## import numpy as np
+## import pandas as pd
 import random
+from dcase24t6.utils.SQLiteLogger import SQLiteLogger
 
 __all__ = ['Transformer', 'TransformerEncoder', 'TransformerDecoder', 'TransformerEncoderLayer', 'TransformerDecoderLayer']
 
@@ -875,15 +876,17 @@ class TransformerDecoderLayer(Module):
         # print(f"Attention Weights Shape: {attn_weights.shape}")  # Example: (batch, num_heads, tgt_len, src_len)
         if random.randrange(1000) == 5:
             
-            # https://stackoverflow.com/questions/36235180/efficiently-creating-a-pandas-dataframe-from-a-numpy-3d-array
-            nparr = attn_weights.detach().cpu().numpy()
-            m,n,r = nparr.shape
-            out_arr = np.column_stack((np.repeat(np.arange(m),n),nparr.reshape(m*n,-1)))
-            df = pd.DataFrame(out_arr)
-            tbl = wandb.Table(dataframe=df)
-            wandb.log({"attn_weights_table":tbl})
+            ### https://stackoverflow.com/questions/36235180/efficiently-creating-a-pandas-dataframe-from-a-numpy-3d-array
+            ## nparr = attn_weights.detach().cpu().numpy()
+            ## m,n,r = nparr.shape
+            ## out_arr = np.column_stack((np.repeat(np.arange(m),n),nparr.reshape(m*n,-1)))
+            ## df = pd.DataFrame(out_arr)
+            ## tbl = wandb.Table(dataframe=df)
+            ## wandb.log({"attn_weights_table":tbl})
             
-            # wandb.log({"attn_weights":attn_weights.detach().cpu().tolist()})
+            ### wandb.log({"attn_weights":attn_weights.detach().cpu().tolist()})
+            logger = SQLiteLogger()
+            logger.addTuple(attn_weights)
         
 
         return x
@@ -969,3 +972,5 @@ def _detect_is_causal_mask(
             make_causal = False
 
     return make_causal
+
+

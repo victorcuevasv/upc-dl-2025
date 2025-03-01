@@ -45,6 +45,7 @@ from dcase24t6.callbacks.evaluator import Evaluator
 from dcase24t6.tokenization.aac_tokenizer import AACTokenizer
 from dcase24t6.utils.job import get_git_hash
 from dcase24t6.utils.saving import save_to_yaml
+from dcase24t6.utils.SQLiteLogger import SQLiteLogger
 
 pylog = logging.getLogger(__name__)
 
@@ -56,8 +57,10 @@ pylog = logging.getLogger(__name__)
 )
 def train(cfg: DictConfig) -> None | float:
     seed_everything(cfg.seed)
-    import wandb
-    wandb.init(project='audio-captioning')
+    # import wandb
+    # wandb.init(project='audio-captioning')
+    sqliteLogger = SQLiteLogger()
+    sqliteLogger.createDB()
 
     start_time = time.perf_counter()
     global_tracker: CustomEmissionTracker = instantiate(cfg.emission)
@@ -123,7 +126,8 @@ def train(cfg: DictConfig) -> None | float:
         f"Job results are saved in '{cfg.save_dir}'. (duration={pretty_total_duration})"
     )
 
-    wandb.finish()
+    # wandb.finish()
+    sqliteLogger.closeDB()
 
 
 def get_callbacks(cfg: DictConfig) -> dict[str, Callback]:
