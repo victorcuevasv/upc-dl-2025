@@ -23,14 +23,14 @@ def countTuples(conn, tableName):
 
 def getTuples(conn, tableName, colName):
     cursor = conn.cursor()
-    sql = f"select {colName} from {tableName}"
+    sql = f"select epoch, batch_idx, {colName} from {tableName} order by batch_idx desc"
     rows = cursor.execute(sql)
     counter = 0
-    limit = 5
+    limit = 20
     for row in rows:
-        tensor = pickle.loads(codecs.decode(row[0].encode(),'base64'))
-        print(f"tensor.shape: {tensor.shape}")
-        print(tensor)
+        tensor = pickle.loads(codecs.decode(row[2].encode(),'base64'))
+        print(f"epoch, batch_idx, tensor.shape: {str(row[0])}, {str(row[1])}, {tensor.shape}")
+        # print(tensor)
         counter += 1
         if counter == limit:
             break

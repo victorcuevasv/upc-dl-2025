@@ -466,18 +466,27 @@ class TransformerDecoder(Module):
         seq_len = _get_seq_len(tgt, self.layers[0].self_attn.batch_first)
         tgt_is_causal = _detect_is_causal_mask(tgt_mask, tgt_is_causal, seq_len)
 
+        attn_maps_mha = []
         for mod in self.layers:
-            output = mod(output, memory, tgt_mask=tgt_mask,
+            output, attn_map_mha = mod(output, memory, tgt_mask=tgt_mask,
                          memory_mask=memory_mask,
                          tgt_key_padding_mask=tgt_key_padding_mask,
                          memory_key_padding_mask=memory_key_padding_mask,
                          tgt_is_causal=tgt_is_causal,
-                         memory_is_causal=memory_is_causal)
+                         memory_is_causal=memory_is_causal,
+                         need_weights=True)
+            attn_maps_mha.append(attn_map_mha)
+        
+        # Log attention weights
+        # if random.randrange(100) == 5:
+        #    logger = SQLiteLogger()
+        #    logger.addTuple(torch.stack(attn_maps_mha, dim=0))
 
         if self.norm is not None:
             output = self.norm(output)
 
-        return output
+        # return output
+        return output, attn_maps_mha
 
 class TransformerEncoderLayer(Module):
     r"""TransformerEncoderLayer is made up of self-attn and feedforward network.
@@ -820,6 +829,7 @@ class TransformerDecoderLayer(Module):
         memory_key_padding_mask: Optional[Tensor] = None,
         tgt_is_causal: bool = False,
         memory_is_causal: bool = False,
+        need_weights=True
     ) -> Tensor:
         r"""Pass the inputs (and mask) through the decoder layer.
 
@@ -854,27 +864,20 @@ class TransformerDecoderLayer(Module):
         x = tgt
         if self.norm_first:
             x = x + self._sa_block(self.norm1(x), tgt_mask, tgt_key_padding_mask, tgt_is_causal)
-            x = x + self._mha_block(
-                self.norm2(x),
-                memory,
-                memory_mask,
-                memory_key_padding_mask,
-                memory_is_causal
-            )
-            attn_weights = self.attn_weights  # Modificado: Retrieve the stored attention weights
+            # x = x + self._mha_block(self.norm2(x), memory, memory_mask, memory_key_padding_mask, memory_is_causal)
+            _x, attn_map_mha = self._mha_block(self.norm2(x), memory, memory_mask, memory_key_padding_mask, memory_is_causal)
+            x = x + _x
+            # attn_weights = self.attn_weights  # Modificado: Retrieve the stored attention weights
             x = x + self._ff_block(self.norm3(x))
         else:
             x = self.norm1(x + self._sa_block(x, tgt_mask, tgt_key_padding_mask, tgt_is_causal))
-            x = self.norm2(
-                x + self._mha_block(
-                    x, memory, memory_mask, memory_key_padding_mask, memory_is_causal
-                )
-            )
-            attn_weights = self.attn_weights  # Modificado: Retrieve the stored attention weights
+            # x = self.norm2(x + self._mha_block(x, memory, memory_mask, memory_key_padding_mask, memory_is_causal))
+            _x, attn_map_mha = self._mha_block(x, memory, memory_mask, memory_key_padding_mask, memory_is_causal)
+            # attn_weights = self.attn_weights  # Modificado: Retrieve the stored attention weights
             x = self.norm3(x + self._ff_block(x))
         # Log attention weights (use a logging system of your choice)
         # print(f"Attention Weights Shape: {attn_weights.shape}")  # Example: (batch, num_heads, tgt_len, src_len)
-        if random.randrange(1000) == 5:
+        # if random.randrange(1000) == 5:
             
             ### https://stackoverflow.com/questions/36235180/efficiently-creating-a-pandas-dataframe-from-a-numpy-3d-array
             ## nparr = attn_weights.detach().cpu().numpy()
@@ -885,11 +888,10 @@ class TransformerDecoderLayer(Module):
             ## wandb.log({"attn_weights_table":tbl})
             
             ### wandb.log({"attn_weights":attn_weights.detach().cpu().tolist()})
-            logger = SQLiteLogger()
-            logger.addTuple(attn_weights)
-        
+            # logger = SQLiteLogger()
+            # logger.addTuple(attn_weights)
 
-        return x
+        return x, attn_map_mha
 
     # self-attention block
     def _sa_block(self, x: Tensor,
@@ -904,13 +906,13 @@ class TransformerDecoderLayer(Module):
     # multihead attention block
     def _mha_block(self, x: Tensor, mem: Tensor,
                    attn_mask: Optional[Tensor], key_padding_mask: Optional[Tensor], is_causal: bool = False) -> Tensor:
-        attn_output, attn_weights = self.multihead_attn(x, mem, mem,
+        attn_output, attn_map = self.multihead_attn(x, mem, mem,
                                 attn_mask=attn_mask,
                                 key_padding_mask=key_padding_mask,
                                 is_causal=is_causal,
                                 need_weights=True)
-        self.attn_weights = attn_weights  # Store for later retrieval
-        return self.dropout2(attn_output)
+        # self.attn_weights = attn_weights  # Store for later retrieval
+        return self.dropout2(attn_output), attn_map
 
     # feed forward block
     def _ff_block(self, x: Tensor) -> Tensor:

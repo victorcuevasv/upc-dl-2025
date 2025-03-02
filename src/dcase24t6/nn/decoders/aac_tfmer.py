@@ -11,6 +11,9 @@ from torch import Tensor, nn
 from dcase24t6.nn.functional import get_activation_fn
 from dcase24t6.nn.modules import PositionalEncoding
 
+import random
+from dcase24t6.utils.SQLiteLogger import SQLiteLogger
+
 pylog = logging.getLogger(__name__)
 
 
@@ -27,6 +30,8 @@ class AACTransformerDecoder(nn.TransformerDecoder):
         layer_norm_eps: float = 1e-5,
         nhead: int = 8,
         num_decoder_layers: int = 6,
+        current_batch: int = 0,
+        current_epoch: int = 0
     ) -> None:
         if isinstance(acti_name, str):
             activation = get_activation_fn(acti_name)
@@ -62,6 +67,9 @@ class AACTransformerDecoder(nn.TransformerDecoder):
         self.emb_layer = emb_layer
         self.pos_encoding = pos_encoding
         self.classifier = classifier
+
+        self.current_batch = 0
+        self.current_epoch = 0
 
     def forward(
         self,
@@ -114,7 +122,7 @@ class AACTransformerDecoder(nn.TransformerDecoder):
         caps_in = caps_in * math.sqrt(d_model)
         caps_in = self.pos_encoding(caps_in)
 
-        tok_embs_outs = super().forward(
+        tok_embs_outs, attn_maps_mha = super().forward(
             memory=frame_embs,
             memory_key_padding_mask=frame_embs_pad_mask,
             memory_mask=frame_embs_attn_mask,
@@ -122,6 +130,11 @@ class AACTransformerDecoder(nn.TransformerDecoder):
             tgt_key_padding_mask=caps_in_pad_mask,
             tgt_mask=caps_in_attn_mask,
         )
+        # Log attention weights
+        # if random.randrange(100) == 5:
+        if self.current_epoch == 3 and self.current_batch % 10 == 0:
+            logger = SQLiteLogger()
+            logger.addTuple(self.current_epoch, self.current_batch, torch.stack(attn_maps_mha, dim=0))
         tok_logits_out = self.classifier(tok_embs_outs)
 
         # breakpoint()

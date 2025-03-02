@@ -28,17 +28,17 @@ class SQLiteLogger(metaclass=Singleton):
     def createDB(self):
         self.conn = sqlite3.connect(self.dbName)
         cursor = self.conn.cursor()
-        sql = f"create table if not exists {self.tableName} ({self.colName} string)"
+        sql = f"create table if not exists {self.tableName} (epoch int, batch_idx int, {self.colName} string)"
         cursor.execute(sql)
         cursor.close()
 
     def closeDB(self):
         self.conn.commit()
 
-    def addTuple(self, tensor):
+    def addTuple(self, epoch, batch_idx, tensor):
         cursor = self.conn.cursor()
         pickled = pickle.dumps(tensor, -1)
         pickledCoded = codecs.encode(pickled, "base64").decode()
-        sql = f"insert into {self.tableName}({self.colName}) values (?)"
-        cursor.execute(sql, (pickledCoded,))
+        sql = f"insert into {self.tableName}(epoch, batch_idx, {self.colName}) values (?, ?, ?)"
+        cursor.execute(sql, (epoch, batch_idx, pickledCoded,))
         cursor.close()

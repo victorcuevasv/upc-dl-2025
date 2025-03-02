@@ -124,7 +124,9 @@ class TransDecoderModel(AACModel):
 
         return [optimizer], [scheduler]
 
-    def training_step(self, batch: TrainBatch) -> Tensor:
+    def training_step(self, batch: TrainBatch, batch_idx) -> Tensor:
+        self.decoder.current_batch = batch_idx
+        self.decoder.current_epoch = self.current_epoch
         audio = batch["frame_embs"]
         audio_shape = batch["frame_embs_shape"]
         captions = batch["captions"]
