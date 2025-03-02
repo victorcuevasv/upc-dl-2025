@@ -127,6 +127,8 @@ class TransDecoderModel(AACModel):
     def training_step(self, batch: TrainBatch, batch_idx) -> Tensor:
         self.decoder.current_batch = batch_idx
         self.decoder.current_epoch = self.current_epoch
+        self.decoder.mode = "train"
+
         audio = batch["frame_embs"]
         audio_shape = batch["frame_embs_shape"]
         captions = batch["captions"]
@@ -158,7 +160,11 @@ class TransDecoderModel(AACModel):
 
         return loss
 
-    def validation_step(self, batch: ValBatch) -> dict[str, Tensor]:
+    def validation_step(self, batch: ValBatch, batch_idx) -> dict[str, Tensor]:
+        self.decoder.current_batch = batch_idx
+        self.decoder.current_epoch = self.current_epoch
+        self.decoder.mode = "validate"
+
         audio = batch["frame_embs"]
         audio_shape = batch["frame_embs_shape"]
         mult_captions = batch["mult_captions"]
@@ -197,7 +203,11 @@ class TransDecoderModel(AACModel):
         } | decoded
         return outputs
 
-    def test_step(self, batch: TestBatch) -> dict[str, Any]:
+    def test_step(self, batch: TestBatch, batch_idx) -> dict[str, Any]:
+        self.decoder.current_batch = batch_idx
+        self.decoder.current_epoch = self.current_epoch
+        self.decoder.mode = "test"
+        
         audio = batch["frame_embs"]
         audio_shape = batch["frame_embs_shape"]
         mult_captions = batch["mult_captions"]

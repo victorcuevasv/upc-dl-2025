@@ -65,6 +65,7 @@ def generate(
         global_preds_out: (bsize, beam_size, max_global_pred_size)
         global_avg_lprobs: (bsize, beam_size)
     """
+    decoder.decoding = "beam"
     assert beam_size > 0
     assert min_pred_size >= 0
 

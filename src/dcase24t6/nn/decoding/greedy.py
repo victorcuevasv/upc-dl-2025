@@ -41,6 +41,7 @@ def greedy_search(
         Can be a tensor of shape (vocab_size,) or None.
     :returns: logits of shape (bsize, vocab_size, max_pred_size or less)
     """
+    decoder.decoding = "greedy"
     assert min_pred_size >= 0
 
     bsize = frame_embs.shape[0]

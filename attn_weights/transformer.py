@@ -16,7 +16,7 @@ from .normalization import LayerNorm
 ## import numpy as np
 ## import pandas as pd
 import random
-from dcase24t6.utils.SQLiteLogger import SQLiteLogger
+# from dcase24t6.utils.SQLiteLogger import SQLiteLogger
 
 __all__ = ['Transformer', 'TransformerEncoder', 'TransformerDecoder', 'TransformerEncoderLayer', 'TransformerDecoderLayer']
 

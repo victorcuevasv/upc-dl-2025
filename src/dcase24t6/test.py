@@ -25,7 +25,7 @@ from dcase24t6.train import train
     config_name="test",
 )
 def test(cfg: DictConfig) -> None | float:
-    return train(cfg)
+    return train(cfg, trainLaunchedByTest=True)
 
 
 if __name__ == "__main__":

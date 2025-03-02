@@ -55,12 +55,13 @@ pylog = logging.getLogger(__name__)
     config_path=osp.join("..", "conf"),
     config_name="train",
 )
-def train(cfg: DictConfig) -> None | float:
+def train(cfg: DictConfig, trainLaunchedByTest: bool=False) -> None | float:
     seed_everything(cfg.seed)
     # import wandb
     # wandb.init(project='audio-captioning')
     sqliteLogger = SQLiteLogger()
     sqliteLogger.createDB()
+    sqliteLogger.trainLaunchedByTest = trainLaunchedByTest
 
     start_time = time.perf_counter()
     global_tracker: CustomEmissionTracker = instantiate(cfg.emission)

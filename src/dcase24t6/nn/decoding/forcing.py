@@ -33,6 +33,7 @@ def teacher_forcing(
         If None, this mask will be a batch of upper triangular matrix of -inf, which avoid seeing the future tokens.
     :returns: (max_pred_size, bsize, vocab_size)
     """
+    decoder.decoding = "forcing"
     # (bsize, embed_len, n_frames) -> (n_frames, bsize, embed_len)
     frame_embs = frame_embs.permute(2, 0, 1)
 

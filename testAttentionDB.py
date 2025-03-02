@@ -2,9 +2,7 @@ import sqlite3
 import torch
 import pickle
 import codecs
-import time
 import sys
-
 
 def createDB(dbName, tableName, colName):
     conn = sqlite3.connect(dbName)
@@ -23,13 +21,17 @@ def countTuples(conn, tableName):
 
 def getTuples(conn, tableName, colName):
     cursor = conn.cursor()
-    sql = f"select epoch, batch_idx, {colName} from {tableName} order by batch_idx desc"
+    sql = f"select mode, epoch, batch_idx, decoding, {colName}, frame_embs, caps_in, tok_embs_outs from {tableName} order by batch_idx desc"
     rows = cursor.execute(sql)
     counter = 0
-    limit = 20
+    limit = 40
     for row in rows:
-        tensor = pickle.loads(codecs.decode(row[2].encode(),'base64'))
-        print(f"epoch, batch_idx, tensor.shape: {str(row[0])}, {str(row[1])}, {tensor.shape}")
+        weightsTensor = pickle.loads(codecs.decode(row[4].encode(),'base64'))
+        frameEmbsTensor = pickle.loads(codecs.decode(row[5].encode(),'base64'))
+        capsInTensor = pickle.loads(codecs.decode(row[6].encode(),'base64'))
+        tokEmbsOutsTensor = pickle.loads(codecs.decode(row[7].encode(),'base64'))
+        print(f"""<mode, epoch, batch_idx, decoding, weights.shape, frame_embs.shape, caps_in.shape tok_embs_outs.shape>: 
+              {row[0]}, {str(row[1])}, {str(row[2])}, {row[3]}, {weightsTensor.shape}, {frameEmbsTensor.shape}, {capsInTensor.shape}, {tokEmbsOutsTensor.shape}""")
         # print(tensor)
         counter += 1
         if counter == limit:

@@ -31,7 +31,9 @@ class AACTransformerDecoder(nn.TransformerDecoder):
         nhead: int = 8,
         num_decoder_layers: int = 6,
         current_batch: int = 0,
-        current_epoch: int = 0
+        current_epoch: int = 0,
+        mode: str = "unset",
+        decoding: str = "unset"
     ) -> None:
         if isinstance(acti_name, str):
             activation = get_activation_fn(acti_name)
@@ -70,6 +72,8 @@ class AACTransformerDecoder(nn.TransformerDecoder):
 
         self.current_batch = 0
         self.current_epoch = 0
+        self.mode = "unset"
+        self.decoding = "unset"
 
     def forward(
         self,
@@ -132,9 +136,9 @@ class AACTransformerDecoder(nn.TransformerDecoder):
         )
         # Log attention weights
         # if random.randrange(100) == 5:
-        if self.current_epoch == 3 and self.current_batch % 10 == 0:
-            logger = SQLiteLogger()
-            logger.addTuple(self.current_epoch, self.current_batch, torch.stack(attn_maps_mha, dim=0))
+        logger = SQLiteLogger()
+        if (self.current_epoch == 3 and self.current_batch == 10) or (self.mode == "test" and self.current_batch== 10) or logger.inference :
+            logger.addTuple(self.mode, self.current_epoch, self.current_batch, self.decoding, torch.stack(attn_maps_mha, dim=0), frame_embs, caps_in, tok_embs_outs)
         tok_logits_out = self.classifier(tok_embs_outs)
 
         # breakpoint()
