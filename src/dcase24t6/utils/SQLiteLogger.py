@@ -20,9 +20,14 @@ class SQLiteLogger(metaclass=Singleton):
     trainLaunchedByTest = False
     inference = False
 
-    def __init__(self):
-        timestmp = int(time.time())
-        self.dbName = f"attn{timestmp}.db"
+    def __init__(self, dbUUID=None):
+        dbName = ""
+        if dbUUID is None:
+            timestmp = int(time.time())
+            dbName = f"attn-{timestmp}.db"
+        else:
+            dbName = f"attn-{dbUUID}.db"
+        self.dbName = dbName
         self.tableName = "weights"
         self.colName = "weights"
         self.conn = None

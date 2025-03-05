@@ -1,8 +1,10 @@
 import torchaudio
 from dcase24t6.nn.hub import baseline_pipeline
 from dcase24t6.utils.SQLiteLogger import SQLiteLogger
+import uuid
 
-sqliteLogger = SQLiteLogger()
+dbUUID = str(uuid.uuid4())
+sqliteLogger = SQLiteLogger(dbUUID=dbUUID)
 sqliteLogger.createDB()
 sqliteLogger.inference = True
 
