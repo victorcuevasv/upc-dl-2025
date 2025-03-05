@@ -33,6 +33,9 @@ class SQLiteLogger(metaclass=Singleton):
         sql = f"""create table if not exists {self.tableName} 
         (mode string, epoch int, batch_idx int, decoding string, {self.colName} string, frame_embs string, caps_in string, tok_embs_outs)"""
         cursor.execute(sql)
+        sql = f"""create table if not exists output
+        (mode string, epoch int, batch_idx int, decoding string, outs string, cands string)"""
+        cursor.execute(sql)
         cursor.close()
 
     def closeDB(self):
@@ -54,4 +57,14 @@ class SQLiteLogger(metaclass=Singleton):
         pickledTokEmbsOutsCoded = codecs.encode(pickledTokEmbsOuts, "base64").decode()
         sql = f"insert into {self.tableName}(mode, epoch, batch_idx, decoding, {self.colName}, frame_embs, caps_in, tok_embs_outs) values (?, ?, ?, ?, ?, ?, ?, ?)"
         cursor.execute(sql, (mode, epoch, batch_idx, decoding, pickledAttnCoded, pickledFrameEmbsCoded, pickledCapsInCoded, pickledTokEmbsOutsCoded))
+        cursor.close()
+
+    def addOuputTuple(self, mode, epoch, batch_idx, decoding, outs, cands):
+        if self.inference:
+            mode = "inference"
+        elif self.trainLaunchedByTest:
+            mode = "test"
+        cursor = self.conn.cursor()
+        sql = f"insert into output(mode, epoch, batch_idx, decoding, outs, cands) values (?, ?, ?, ?, ?, ?)"
+        cursor.execute(sql, (mode, epoch, batch_idx, decoding, outs, cands))
         cursor.close()

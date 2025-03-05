@@ -27,6 +27,7 @@ from dcase24t6.nn.decoding.greedy import greedy_search
 from dcase24t6.optim.schedulers import CosDecayScheduler
 from dcase24t6.optim.utils import create_params_groups
 from dcase24t6.tokenization.aac_tokenizer import AACTokenizer
+from dcase24t6.utils.SQLiteLogger import SQLiteLogger
 
 ModelOutput = dict[str, Tensor]
 
@@ -378,6 +379,7 @@ class TransDecoderModel(AACModel):
                 kwargs = common_args | generate_args | method_overrides
                 outs = generate(**kwargs)
                 outs = outs._asdict()
+                myOutsList = outs['predictions'].tolist()
 
                 # Decode predictions ids to sentences
                 keys = list(outs.keys())
@@ -398,6 +400,10 @@ class TransDecoderModel(AACModel):
                         )
                     new_key = key.replace("prediction", "candidate")
                     outs[new_key] = cands
+                logger = SQLiteLogger()
+                if ((self.decoder.current_epoch == 3 and self.decoder.current_batch == 10) or 
+                    (self.decoder.mode == "test" and self.decoder.current_batch== 10) or logger.inference) :
+                    logger.addOuputTuple(self.decoder.mode, self.decoder.current_epoch, self.decoder.current_batch, self.decoder.decoding, str(myOutsList), str(cands))
 
             case method:
                 DECODE_METHODS = ("forcing", "greedy", "generate", "auto")
