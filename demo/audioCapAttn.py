@@ -112,18 +112,33 @@ def plot_attention(topBeamCand):
     global maxIndex
     xtitle="Keys"
     ytitle="Queries"
+    wordList = getWordList(topBeamCand)
+    wordList.append('<eos>')
+    sns.set(font_scale = 2)
     sns.set(rc={'figure.figsize':(20, 8)})
     # Consider the case in which a candidate dropped in position along the beam
     beamSize = weightsTensor.size(dim=1)
+    nFrames = weightsTensor[0][min(maxIndex, beamSize-1)].size(dim=1)
+    num_ticks = 10
+    fontSize = 16
+    xticks = np.linspace(0, nFrames - 1, num_ticks, dtype=int)
+    print(f"xticks: {xticks}")
     ax = sns.heatmap(
         weightsTensor[0][min(maxIndex, beamSize-1)],
-        cmap="coolwarm",)
+        cmap="coolwarm",
         # linewidth=0.5,
-        # xticklabels=keys,
-        # yticklabels=queries,
-    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-    ax.set_xlabel(xtitle)
-    ax.set_ylabel(ytitle)
+        yticklabels=wordList,)
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, size = fontSize)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=0, size = fontSize)
+    for ind, label in enumerate(ax.get_xticklabels()):
+        if ind % 10 == 0:  # every 10th label is kept
+            label.set_visible(True)
+        else:
+            label.set_visible(False)
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=fontSize)
+    # ax.set_xlabel(xtitle)
+    # ax.set_ylabel(ytitle)
     plt.savefig("corr.png")
     plt.clf()
     plots = ["corr.png"]
@@ -135,7 +150,7 @@ outputs = None
 weightsTensor = None
 maxIndex = 0
 
-with gr.Blocks(css=".preview { width: 100%; }") as demo:
+with gr.Blocks() as demo:
     audio = gr.Audio(type="filepath")
     textBox = gr.Textbox()
     gallery = gr.Gallery(label="Attention weights")
