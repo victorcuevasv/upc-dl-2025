@@ -46,6 +46,7 @@ from dcase24t6.tokenization.aac_tokenizer import AACTokenizer
 from dcase24t6.utils.job import get_git_hash
 from dcase24t6.utils.saving import save_to_yaml
 from dcase24t6.utils.SQLiteLogger import SQLiteLogger
+import torch
 
 pylog = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ pylog = logging.getLogger(__name__)
     config_name="train",
 )
 def train(cfg: DictConfig, trainLaunchedByTest: bool=False) -> None | float:
+    torch.set_float32_matmul_precision('medium')
     seed_everything(cfg.seed)
     # import wandb
     # wandb.init(project='audio-captioning')

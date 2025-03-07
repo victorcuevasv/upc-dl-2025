@@ -873,6 +873,7 @@ class TransformerDecoderLayer(Module):
             x = self.norm1(x + self._sa_block(x, tgt_mask, tgt_key_padding_mask, tgt_is_causal))
             # x = self.norm2(x + self._mha_block(x, memory, memory_mask, memory_key_padding_mask, memory_is_causal))
             _x, attn_map_mha = self._mha_block(x, memory, memory_mask, memory_key_padding_mask, memory_is_causal)
+            x = self.norm2(x + _x)
             # attn_weights = self.attn_weights  # Modificado: Retrieve the stored attention weights
             x = self.norm3(x + self._ff_block(x))
         # Log attention weights (use a logging system of your choice)

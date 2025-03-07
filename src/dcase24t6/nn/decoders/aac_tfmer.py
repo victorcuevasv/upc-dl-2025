@@ -137,7 +137,7 @@ class AACTransformerDecoder(nn.TransformerDecoder):
         # Log attention weights
         # if random.randrange(100) == 5:
         logger = SQLiteLogger()
-        if (self.current_epoch == 3 and self.current_batch == 10) or (self.mode == "test" and self.current_batch== 10) or logger.inference :
+        if (self.current_epoch % 40 == 0 and self.current_batch == 10) or (self.mode == "test" and self.current_batch == 10) or logger.inference :
             logger.addTuple(self.mode, self.current_epoch, self.current_batch, self.decoding, torch.stack(attn_maps_mha, dim=0), frame_embs, caps_in, tok_embs_outs)
         tok_logits_out = self.classifier(tok_embs_outs)
 

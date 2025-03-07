@@ -20,13 +20,9 @@ class SQLiteLogger(metaclass=Singleton):
     trainLaunchedByTest = False
     inference = False
 
-    def __init__(self, dbUUID=None):
-        dbName = ""
-        if dbUUID is None:
-            timestmp = int(time.time())
-            dbName = f"attn-{timestmp}.db"
-        else:
-            dbName = f"attn-{dbUUID}.db"
+    def __init__(self):
+        timestmp = int(time.time())
+        dbName = f"attn-{timestmp}.db"
         self.dbName = dbName
         self.tableName = "weights"
         self.colName = "weights"
@@ -45,6 +41,7 @@ class SQLiteLogger(metaclass=Singleton):
 
     def closeDB(self):
         self.conn.commit()
+        self.conn.close()
 
     def addTuple(self, mode, epoch, batch_idx, decoding, attn_tensor, frame_embs_tensor, caps_in_tensor, tok_embs_outs_tensor):
         if self.inference:
