@@ -1,0 +1,7 @@
+gradio==3.50
+transformers
+torch==2.2.1
+torchoutil[extras]~=0.3.0
+ffmpeg
+ffmpeg-python
+git+https://github.com/Labbeti/dcase2024-task6-baseline

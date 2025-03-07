@@ -1,0 +1,28 @@
+# Clone virtual environment
+conda create --name env_dcase24_gradio --clone env_dcase24
+
+# Create virtual environment
+# conda create -n gradio-venv python=3.11
+
+# Activate virtual environment
+conda activate gradio-venv
+
+# Downgrade pip
+pip install --force-reinstall pip==23.0
+
+# Install requirements
+pip install -r requirements.txt
+
+
+
+
+
+
+
+# Windows
+
+# Set environment variable for ffmpeg
+$env:FFMPEG_BIN = "C:\Users\victor.cuevas\workspace\gradioapp\ffmpeg-master-latest-win64-gpl-shared\bin\ffmpeg.exe"; 
+
+# Run application
+python music.py

@@ -1,0 +1,4 @@
+1) Create a virtual environment with the requirements_attn.txt file in the attention repository.
+2) Install the dependencies in the requirements_attn_extras.txt file in this folder.
+3) Execute the apply path script in the attention repository.
+
