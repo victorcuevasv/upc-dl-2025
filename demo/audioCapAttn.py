@@ -121,8 +121,7 @@ def plot_attention(topBeamCand):
     nFrames = weightsTensor[0][min(maxIndex, beamSize-1)].size(dim=1)
     num_ticks = 10
     fontSize = 16
-    xticks = np.linspace(0, nFrames - 1, num_ticks, dtype=int)
-    print(f"xticks: {xticks}")
+    # xticks = np.linspace(0, nFrames - 1, num_ticks, dtype=int)
     ax = sns.heatmap(
         weightsTensor[0][min(maxIndex, beamSize-1)],
         cmap="coolwarm",
