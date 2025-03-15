@@ -101,6 +101,9 @@ def getWordList(sentence):
     sentence = sentence.replace(',', '')
     return sentence.split()
 
+def minMaxNorm(x, minVal, maxVal):
+    return (x - minVal) / (maxVal - minVal)
+
 def plot_attention(topBeamCand):
     """ Plots the attention map
     Args:
@@ -119,11 +122,20 @@ def plot_attention(topBeamCand):
     # Consider the case in which a candidate dropped in position along the beam
     beamSize = weightsTensor.size(dim=1)
     nFrames = weightsTensor[0][min(maxIndex, beamSize-1)].size(dim=1)
+    print(f"maxIndex: {maxIndex} beamSize: {beamSize}")
     num_ticks = 10
     fontSize = 16
     # xticks = np.linspace(0, nFrames - 1, num_ticks, dtype=int)
+    attnData = weightsTensor[0][min(maxIndex, beamSize-1)]
+    print(f"attnData: {attnData}")
+    attnDataMax = torch.amax(attnData, dim=(0, 1))
+    attnDataMin = torch.amin(attnData, dim=(0, 1))
+    print(f"max: {attnDataMax}")
+    print(f"min: {attnDataMin}")
+    attnDataNorm = minMaxNorm(attnData, attnDataMin, attnDataMax)
+    print(f"attnDataNorm: {attnDataNorm}")
     ax = sns.heatmap(
-        weightsTensor[0][min(maxIndex, beamSize-1)],
+        attnDataNorm,
         cmap="coolwarm",
         # linewidth=0.5,
         yticklabels=wordList,)
