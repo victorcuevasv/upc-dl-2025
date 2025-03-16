@@ -17,7 +17,9 @@ from tokenizers.processors import PostProcessor
 from tokenizers.processors import Sequence as ProcessorSequence
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import Trainer, WordLevelTrainer
-from transformers import AutoModel, BertTokenizer
+from transformers import AutoModel, AutoTokenizer, BertModel, BertTokenizer
+import torch
+import os
 
 
 class AACTokenizer:
@@ -32,6 +34,7 @@ class AACTokenizer:
         eos_token: str = "[SEP]",  # Added for this application
         unk_token: str = "[UNK]",
         version: int | None = None,
+        bertModel: BertModel = None,
     ) -> None:
         """Wrapper of tokenizers.Tokenizer for audio captioning.
 
@@ -44,7 +47,7 @@ class AACTokenizer:
             version: AACTokenizer version. Intended for future updates of this class.
         """
         if tokenizer is None:
-            tokenizer = self.__class__.bert_tokenizer()
+            tokenizer, bertModel = self.__class__.bert_tokenizer()
 
         if version is None:
             version = AACTokenizer.VERSION
@@ -56,6 +59,9 @@ class AACTokenizer:
         self._eos_token = eos_token
         self._unk_token = unk_token
         self._version = version
+        device = torch.device('cuda:0')
+        self.bertModel = bertModel
+        self.bertModel = self.bertModel.to(device)
 
     @classmethod
     def default_tokenizer(
@@ -92,9 +98,16 @@ class AACTokenizer:
         eos_token: str = "[SEP]",
         unk_token: str = "[UNK]",
     ) -> BertTokenizer:
-        model_type = "bert-base-cased"
-        tokenizer = BertTokenizer.from_pretrained(model_type, use_fast=False)
-        model = AutoModel.from_pretrained(model_type)
+        # model_type = "bert-base-cased"
+        # model_type = "prajjwal1/bert-mini"
+        # model_type = "gaunernst/bert-mini-uncased"
+        # tokenizer = BertTokenizer.from_pretrained(model_type, use_fast=False)
+        # tokenizer = AutoTokenizer.from_pretrained(model_type, use_fast=False)
+        # model = AutoModel.from_pretrained(model_type)
+        tokenizer = AutoTokenizer.from_pretrained("/home/victorcuevasv/bert/upc-dl-2025/bert-mini", local_files_only=True, use_fast=False)
+        model = AutoModel.from_pretrained("/home/victorcuevasv/bert/upc-dl-2025/bert-mini", local_files_only=True, output_hidden_states=True)
+        for name, param in model.named_parameters():
+            param.requires_grad = False
         # new tokens
         new_tokens = [bos_token, eos_token]
         # check if the tokens are already in the vocabulary
@@ -103,7 +116,7 @@ class AACTokenizer:
         tokenizer.add_tokens(list(new_tokens))
         # add new, random embeddings for the new tokens
         model.resize_token_embeddings(len(tokenizer))
-        return tokenizer
+        return tokenizer, model
 
     @classmethod
     def default_normalizer(cls) -> Normalizer:

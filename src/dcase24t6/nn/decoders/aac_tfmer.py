@@ -10,6 +10,7 @@ from torch import Tensor, nn
 
 from dcase24t6.nn.functional import get_activation_fn
 from dcase24t6.nn.modules import PositionalEncoding
+from dcase24t6.tokenization.aac_tokenizer import AACTokenizer
 
 pylog = logging.getLogger(__name__)
 
@@ -27,7 +28,9 @@ class AACTransformerDecoder(nn.TransformerDecoder):
         layer_norm_eps: float = 1e-5,
         nhead: int = 8,
         num_decoder_layers: int = 6,
+        tokenizer: AACTokenizer = None,
     ) -> None:
+        self.tokenizer = tokenizer
         if isinstance(acti_name, str):
             activation = get_activation_fn(acti_name)
         else:
@@ -106,8 +109,13 @@ class AACTransformerDecoder(nn.TransformerDecoder):
                 device=caps_in.device,
             )
 
+        # if not caps_in.is_floating_point():
+        #    caps_in = self.emb_layer(caps_in)
+
         if not caps_in.is_floating_point():
-            caps_in = self.emb_layer(caps_in)
+            with torch.no_grad():
+                outputs = self.tokenizer.bertModel(caps_in)
+                caps_in = outputs.last_hidden_state
 
         # caps_in: (caps_in_len, bsize, d_model)
         d_model = caps_in.shape[-1]

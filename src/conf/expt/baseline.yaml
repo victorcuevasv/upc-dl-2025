@@ -1,8 +1,8 @@
 # @package _global_
 
 trainer:
-  max_epochs: 400
-  # max_epochs: 4
+  # max_epochs: 400
+  max_epochs: 5
   gradient_clip_val: 1
   accumulate_grad_batches: 8
 

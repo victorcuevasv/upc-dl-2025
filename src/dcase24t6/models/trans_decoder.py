@@ -27,6 +27,7 @@ from dcase24t6.nn.decoding.greedy import greedy_search
 from dcase24t6.optim.schedulers import CosDecayScheduler
 from dcase24t6.optim.utils import create_params_groups
 from dcase24t6.tokenization.aac_tokenizer import AACTokenizer
+import sys
 
 ModelOutput = dict[str, Tensor]
 
@@ -94,6 +95,7 @@ class TransDecoderModel(AACModel):
             vocab_size=self.tokenizer.get_vocab_size(),
             pad_id=self.tokenizer.pad_token_id,
             d_model=self.hparams["d_model"],
+            tokenizer=self.tokenizer
         )
 
         forbid_rep_mask = get_forbid_rep_mask_content_words(
@@ -270,7 +272,32 @@ class TransDecoderModel(AACModel):
         return self.val_criterion(logits, target)
 
     def input_emb_layer(self, ids: Tensor) -> Tensor:
-        return self.decoder.emb_layer(ids)
+        # cuda0 = torch.device('cuda:0')
+        """
+        print(f"ids: {captions_in_pad_mask.shape}")
+        print(f"ids: {captions_in_pad_mask}")
+        print(f"ids: {ids.shape}")
+        print(f"ids: {ids}")
+        """
+        # originalEmbs = self.decoder.emb_layer(ids)
+        # print(f"Original emb_layer shape: {originalEmbs.shape}")
+        # print(f"Original emb_layer: {originalEmbs}")
+        word_embeddings = None
+        with torch.no_grad():
+            # attention_mask = torch.ones(ids.size(dim=1))
+            # outputs = self.tokenizer.bertModel(ids, attention_mask)
+            # bertMask = [[1 if element else 0 for element in row] for row in captions_in_pad_mask]
+            # bertMaskTensor = torch.as_tensor(bertMask).to(cuda0)
+            # print(f"ids: {bertMaskTensor.shape}")
+            # print(f"ids: {bertMaskTensor}")
+            outputs = self.tokenizer.bertModel(ids)
+            word_embeddings = outputs.last_hidden_state
+            # word_embeddings = self.tokenizer.bertModel.bert.embeddings.word_embeddings(ids)
+        # print(f"Bert word embeddings shape: {word_embeddings.shape}")
+        # print(f"Bert word embeddings: {word_embeddings}")
+        # sys.exit(0)
+        return word_embeddings
+        # return self.decoder.emb_layer(ids)
 
     def mix_audio(
         self, audio: Tensor, audio_shape: Tensor, indexes: Tensor
